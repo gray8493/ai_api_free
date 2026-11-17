@@ -1,0 +1,27 @@
+# Build outputs & Binaries
+/target
+*.exe
+*.old.exe
+*.pdb
+
+# Secret configs & Private Keys (Tuyệt đối không commit)
+config.json
+keys.md
+keys*
+*.key
+*.pem
+*.env
+*.env.*
+*.log
+
+# Allow clean template config
+!config.example.json
+
+# Taste skill internal state
+.taste-skill/
+
+# System & Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

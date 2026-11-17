@@ -1,0 +1,2172 @@
+<!doctype html>
+<html lang="vi" data-type="software" data-theme="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="page-type" content="software" />
+<meta name="site-kind" content="software" />
+<title>AI Gateway · Software Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Host+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* ==========================================================================
+     Taste-Skill: Software / Developer Tool Design System
+     Modeled after Figma.com and x.ai reference recordings:
+     - 90-95% neutral dark obsidian/ink ground (#070708)
+     - Cards one clear step off the page (#151517) with 1px top highlight
+     - Hairline 1px borders (rgba(255, 255, 255, 0.08))
+     - Authentic brand identity colors for real providers
+     - Refined monospace typography for code, metrics, and tokens
+     - Quiet micro-interactions: button press, card lift 2px, live pulse
+     ========================================================================== */
+  :root, html {
+    color-scheme: dark;
+  }
+  :root {
+    --bg: #070708;
+    --card: #151517;
+    --card-surface: #101012;
+    --card-raised: #1c1c1f;
+    --card-sunken: #0b0b0d;
+
+    --ink: #f4f4f6;
+    --muted: #8b8f9a;
+    --dim: #545763;
+
+    /* Hairlines & Highlights (per taste-skill cards.md) */
+    --c-border: rgba(255, 255, 255, 0.08);
+    --c-border-hover: rgba(255, 255, 255, 0.16);
+    --c-hi: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+    --c-sh: 0 1px 3px rgba(0, 0, 0, 0.5);
+
+    /* Electric Action Accent (crisp developer blue, strictly no lavender/purple) */
+    --action: #2563eb;
+    --action-hover: #3b82f6;
+    --action-glow: rgba(37, 99, 235, 0.25);
+
+    /* Telemetry indicators */
+    --ok: #10b981;
+    --warn: #f59e0b;
+    --err: #ef4444;
+
+    /* Radius scale (taste-skill soft) */
+    --r-sm: 6px;
+    --r-md: 10px;
+    --r-lg: 14px;
+    --r-full: 999px;
+
+    --font-ui: "Host Grotesk", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
+    --display-weight: 500;
+    --display-tracking: -0.035em;
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-ui);
+    font-size: 13.5px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Software Grid Background Pattern */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-image: 
+      linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    background-size: 32px 32px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* -------------------------------------------------------------------------
+     App Header (x.ai / Figma Console Standard)
+     ------------------------------------------------------------------------- */
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    height: 56px;
+    background: rgba(7, 7, 8, 0.88);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--c-border);
+  }
+
+  .header-brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .brand-logo {
+    width: 28px;
+    height: 28px;
+    background: #11141c;
+    border: 1px solid rgba(37, 99, 235, 0.4);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 12px rgba(37, 99, 235, 0.25);
+    border-radius: var(--r-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 11px;
+    color: #60a5fa;
+    letter-spacing: -0.5px;
+  }
+
+  .brand-text-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .brand-title {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink);
+    letter-spacing: -0.2px;
+  }
+
+  .brand-badge {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: var(--card-raised);
+    border: 1px solid var(--c-border);
+    color: var(--muted);
+  }
+
+  /* Segmented Nav Tabs */
+  .nav-tabs {
+    display: flex;
+    align-items: center;
+    background: var(--card-sunken);
+    border: 1px solid var(--c-border);
+    padding: 3px;
+    border-radius: var(--r-md);
+    gap: 2px;
+  }
+
+  .nav-tab-btn {
+    appearance: none;
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    font-family: var(--font-ui);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 5px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.14s var(--ease-out);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .nav-tab-btn:hover {
+    color: var(--ink);
+  }
+
+  .nav-tab-btn.active {
+    background: var(--card-raised);
+    color: #ffffff;
+    box-shadow: var(--c-hi), 0 1px 3px rgba(0, 0, 0, 0.4);
+  }
+
+  /* Header Telemetry Right */
+  .header-telemetry {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .pill-badge {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--muted);
+    background: var(--card);
+    border: 1px solid var(--c-border);
+    padding: 4px 10px;
+    border-radius: var(--r-full);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .pill-badge b {
+    color: var(--ink);
+    font-weight: 500;
+  }
+
+  .dot-indicator {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--ok);
+    box-shadow: 0 0 6px var(--ok);
+  }
+  .dot-indicator.bad { background: var(--err); box-shadow: 0 0 6px var(--err); }
+  .dot-indicator.warn { background: var(--warn); box-shadow: 0 0 6px var(--warn); }
+  .dot-indicator.pulse { animation: pulseAnim 2s infinite; }
+
+  @keyframes pulseAnim {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* -------------------------------------------------------------------------
+     Main Layout
+     ------------------------------------------------------------------------- */
+  main {
+    position: relative;
+    z-index: 1;
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 24px 20px;
+  }
+
+  .tab-pane {
+    display: none;
+    animation: fadeIn 0.18s var(--ease-out);
+  }
+  .tab-pane.active {
+    display: block;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* -------------------------------------------------------------------------
+     Cards (Software System per cards.md)
+     ------------------------------------------------------------------------- */
+  .software-card {
+    background: var(--card);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-lg);
+    box-shadow: var(--c-hi), var(--c-sh);
+    padding: 20px;
+    transition: transform 0.16s var(--ease-out), border-color 0.16s var(--ease-out);
+  }
+
+  .software-card:hover {
+    border-color: var(--c-border-hover);
+  }
+
+  .card-header-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+    gap: 12px;
+  }
+
+  .card-heading {
+    margin: 0;
+    font-size: 14.5px;
+    font-weight: 600;
+    color: var(--ink);
+    letter-spacing: -0.2px;
+  }
+
+  .card-subtext {
+    margin: 3px 0 0;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  /* -------------------------------------------------------------------------
+     Form Controls & Buttons
+     ------------------------------------------------------------------------- */
+  .btn {
+    appearance: none;
+    background: var(--card-raised);
+    border: 1px solid var(--c-border);
+    box-shadow: var(--c-hi);
+    color: var(--ink);
+    font-family: var(--font-ui);
+    font-size: 12.5px;
+    font-weight: 500;
+    padding: 6px 12px;
+    border-radius: var(--r-sm);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    transition: all 0.12s var(--ease-out);
+    user-select: none;
+  }
+
+  .btn:hover {
+    background: #232328;
+    border-color: var(--c-border-hover);
+  }
+
+  .btn:active {
+    transform: scale(0.98);
+  }
+
+  .btn.primary {
+    background: var(--action);
+    border-color: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+    box-shadow: var(--c-hi), 0 2px 6px rgba(37, 99, 235, 0.35);
+    font-weight: 600;
+  }
+  .btn.primary:hover {
+    background: var(--action-hover);
+  }
+
+  .btn.sm {
+    padding: 4px 8px;
+    font-size: 11.5px;
+    border-radius: 5px;
+  }
+
+  .btn.ghost {
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+    color: var(--muted);
+  }
+  .btn.ghost:hover {
+    background: var(--card-raised);
+    border-color: var(--c-border);
+    color: var(--ink);
+  }
+
+  .btn.danger {
+    background: rgba(239, 68, 68, 0.08);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: #f87171;
+  }
+  .btn.danger:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: var(--err);
+  }
+
+  .btn.ok {
+    background: rgba(16, 185, 129, 0.08);
+    border-color: rgba(16, 185, 129, 0.3);
+    color: #34d399;
+  }
+  .btn.ok:hover {
+    background: rgba(16, 185, 129, 0.2);
+    border-color: var(--ok);
+  }
+
+  input, select, textarea {
+    background: var(--card-sunken);
+    border: 1px solid var(--c-border);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 12.5px;
+    border-radius: var(--r-sm);
+    padding: 6px 10px;
+    outline: none;
+    transition: border-color 0.14s, box-shadow 0.14s;
+    width: 100%;
+    color-scheme: dark;
+  }
+
+  select, option, optgroup {
+    background-color: #151517 !important;
+    color: #f4f4f6 !important;
+    color-scheme: dark;
+  }
+
+  option {
+    background-color: #151517 !important;
+    color: #f4f4f6 !important;
+    padding: 8px 12px;
+    font-size: 12.5px;
+  }
+
+  option:checked, option:hover, option:focus {
+    background-color: #2563eb !important;
+    color: #ffffff !important;
+  }
+
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--action-hover);
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+  }
+
+  input.mono, textarea.mono, select.mono {
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+
+  input[type="checkbox"] {
+    width: 15px;
+    height: 15px;
+    padding: 0;
+    accent-color: var(--action);
+    cursor: pointer;
+    vertical-align: middle;
+  }
+
+  label.field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  label.field > span {
+    font-size: 11.5px;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  /* -------------------------------------------------------------------------
+     TAB 1: Software Playground Chat
+     ------------------------------------------------------------------------- */
+  .chat-app-frame {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 110px);
+    min-height: 560px;
+    background: var(--card);
+    border: 1px solid var(--c-border);
+    box-shadow: var(--c-hi), var(--c-sh);
+    border-radius: var(--r-lg);
+    overflow: hidden;
+  }
+
+  .chat-header-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 16px;
+    background: var(--card-raised);
+    border-bottom: 1px solid var(--c-border);
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .chat-controls-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .model-select-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--card-sunken);
+    border: 1px solid var(--c-border);
+    padding: 2px 8px;
+    border-radius: var(--r-sm);
+  }
+
+  .model-select-wrapper label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  .model-select-wrapper select {
+    background: transparent;
+    border: none;
+    padding: 4px 6px;
+    font-size: 12px;
+    color: var(--ink);
+    min-width: 240px;
+    font-weight: 500;
+    cursor: pointer;
+    color-scheme: dark;
+  }
+  .model-select-wrapper select:focus {
+    box-shadow: none;
+    outline: none;
+  }
+  .model-select-wrapper select option,
+  .model-select-wrapper select optgroup {
+    background-color: #151517 !important;
+    color: #f4f4f6 !important;
+  }
+
+  .chat-controls-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .chat-drawer {
+    display: none;
+    padding: 14px 18px;
+    background: var(--card-sunken);
+    border-bottom: 1px solid var(--c-border);
+  }
+
+  .drawer-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 12px;
+  }
+
+  @media (max-width: 768px) {
+    .drawer-grid { grid-template-columns: 1fr; }
+  }
+
+  /* Chat Messages Viewport */
+  .chat-viewport {
+    flex: 1;
+    overflow-y: auto;
+    padding: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    scroll-behavior: smooth;
+  }
+
+  .chat-empty-state {
+    margin: auto;
+    text-align: center;
+    max-width: 500px;
+    padding: 30px 16px;
+  }
+
+  .empty-badge-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--r-md);
+    background: var(--card-raised);
+    border: 1px solid var(--c-border);
+    box-shadow: var(--c-hi);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #60a5fa;
+    margin-bottom: 14px;
+  }
+
+  .chat-empty-state h3 {
+    margin: 0 0 6px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  .chat-empty-state p {
+    margin: 0 0 18px;
+    font-size: 12.5px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  .prompt-chips-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .prompt-chip {
+    background: var(--card-raised);
+    border: 1px solid var(--c-border);
+    padding: 8px 12px;
+    border-radius: var(--r-sm);
+    font-size: 11.5px;
+    color: var(--muted);
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.12s var(--ease-out);
+  }
+  .prompt-chip:hover {
+    border-color: var(--c-border-hover);
+    color: var(--ink);
+    background: #202026;
+  }
+
+  /* Message Rows */
+  .msg-row {
+    display: flex;
+    gap: 12px;
+    max-width: 860px;
+    width: 100%;
+  }
+
+  .msg-row.user {
+    align-self: flex-end;
+    flex-direction: row-reverse;
+  }
+
+  .msg-row.assistant {
+    align-self: flex-start;
+  }
+
+  .msg-avatar {
+    width: 26px;
+    height: 26px;
+    border-radius: var(--r-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .msg-row.user .msg-avatar {
+    background: #252836;
+    color: #cbd5e1;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .msg-row.assistant .msg-avatar {
+    background: #111420;
+    color: #60a5fa;
+    border: 1px solid rgba(37, 99, 235, 0.4);
+    box-shadow: 0 0 8px rgba(37, 99, 235, 0.2);
+  }
+
+  .msg-bubble-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-width: calc(100% - 40px);
+  }
+
+  .msg-bubble {
+    padding: 11px 16px;
+    border-radius: var(--r-md);
+    font-size: 13.5px;
+    line-height: 1.6;
+    word-break: break-word;
+  }
+
+  .msg-row.user .msg-bubble {
+    background: #1a2233;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    border-bottom-right-radius: 3px;
+  }
+
+  .msg-row.assistant .msg-bubble {
+    background: var(--card-raised);
+    border: 1px solid var(--c-border);
+    box-shadow: var(--c-hi);
+    color: var(--ink);
+    border-bottom-left-radius: 3px;
+  }
+
+  .msg-bubble p { margin: 0 0 8px; }
+  .msg-bubble p:last-child { margin: 0; }
+
+  .msg-bubble code {
+    background: var(--card-sunken);
+    border: 1px solid var(--c-border);
+    padding: 2px 5px;
+    border-radius: 3px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: #93c5fd;
+  }
+
+  .code-block-wrap {
+    margin: 8px 0;
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-sm);
+    background: var(--card-sunken);
+    overflow: hidden;
+  }
+
+  .code-block-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 5px 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid var(--c-border);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .btn-copy-code {
+    background: transparent;
+    border: 1px solid var(--c-border);
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    padding: 2px 7px;
+    border-radius: 3px;
+    cursor: pointer;
+  }
+  .btn-copy-code:hover {
+    color: #ffffff;
+    border-color: var(--c-border-hover);
+  }
+
+  .code-block-wrap pre {
+    margin: 0;
+    padding: 12px 14px;
+    overflow-x: auto;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 1.5;
+    color: #f1f5f9;
+  }
+
+  .msg-meta-bar {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--dim);
+    margin-top: 2px;
+  }
+
+  .msg-provider-tag {
+    color: #60a5fa;
+    background: rgba(37, 99, 235, 0.12);
+    border: 1px solid rgba(37, 99, 235, 0.25);
+    padding: 1px 6px;
+    border-radius: 3px;
+  }
+
+  /* Chat Composer Bar */
+  .chat-composer {
+    padding: 12px 16px;
+    background: var(--card-raised);
+    border-top: 1px solid var(--c-border);
+  }
+
+  .composer-input-box {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+    background: var(--card-sunken);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-sm);
+    padding: 6px 10px;
+    transition: border-color 0.14s;
+  }
+
+  .composer-input-box:focus-within {
+    border-color: var(--action-hover);
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+  }
+
+  .chat-textarea {
+    flex: 1;
+    background: transparent;
+    border: none;
+    padding: 3px 0;
+    resize: none;
+    color: var(--ink);
+    font-size: 13.5px;
+    line-height: 1.45;
+    max-height: 150px;
+    outline: none;
+  }
+
+  /* -------------------------------------------------------------------------
+     TAB 2: Dashboard & Configuration (Software Grid)
+     ------------------------------------------------------------------------- */
+  .dashboard-flow {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  /* Quick Connect Banner */
+  .quick-connect-banner {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 12px;
+    background: #0d1017;
+    border: 1px solid rgba(37, 99, 235, 0.25);
+    box-shadow: var(--c-hi);
+    border-radius: var(--r-md);
+    padding: 14px 18px;
+  }
+
+  .quick-item-box {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .quick-item-label {
+    font-size: 10.5px;
+    font-weight: 500;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .quick-val-pill {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--card-sunken);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-sm);
+    padding: 5px 9px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: #93c5fd;
+  }
+
+  .btn-copy-tag {
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 11px;
+    padding: 1px 4px;
+  }
+  .btn-copy-tag:hover { color: #ffffff; }
+
+  /* Telemetry Table */
+  .table-responsive {
+    overflow-x: auto;
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-sm);
+    background: var(--card-sunken);
+  }
+
+  table.telemetry-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+    text-align: left;
+  }
+
+  table.telemetry-table th {
+    background: var(--card-raised);
+    padding: 9px 12px;
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--c-border);
+  }
+
+  table.telemetry-table td {
+    padding: 9px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+
+  table.telemetry-table tr:last-child td {
+    border-bottom: none;
+  }
+
+  table.telemetry-table td.num {
+    text-align: right;
+  }
+
+  .text-ok { color: var(--ok); }
+  .text-warn { color: var(--warn); }
+  .text-err { color: var(--err); }
+
+  /* Providers Cards Grid */
+  .providers-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(520px, 1fr));
+    gap: 14px;
+  }
+
+  @media (max-width: 800px) {
+    .providers-grid { grid-template-columns: 1fr; }
+  }
+
+  .provider-card {
+    background: var(--card);
+    border: 1px solid var(--c-border);
+    box-shadow: var(--c-hi), var(--c-sh);
+    border-radius: var(--r-lg);
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    transition: transform 0.16s var(--ease-out), border-color 0.16s var(--ease-out);
+  }
+
+  .provider-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--c-border-hover);
+  }
+
+  .provider-card.off {
+    opacity: 0.55;
+    border-style: dashed;
+  }
+
+  .provider-top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .provider-brand-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .provider-badge-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: var(--card-raised);
+    border: 1px solid var(--c-border);
+    box-shadow: var(--c-hi);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .provider-title strong {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--ink);
+    display: block;
+  }
+
+  .provider-title .provider-sub {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .provider-fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .provider-fields .field.span-2 {
+    grid-column: span 2;
+  }
+
+  .accounts-box {
+    background: var(--card-sunken);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-sm);
+    padding: 10px;
+  }
+
+  .accounts-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  .acc-row-line {
+    display: grid;
+    grid-template-columns: 20px 96px 1fr 96px 46px 30px;
+    gap: 6px;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+
+  @media (max-width: 600px) {
+    .acc-row-line { grid-template-columns: 20px 1fr 1fr; }
+  }
+
+  .key-eye-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .key-eye-wrapper input {
+    padding-right: 24px;
+  }
+
+  .btn-eye-toggle {
+    position: absolute;
+    right: 4px;
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 11px;
+    padding: 2px 4px;
+  }
+  .btn-eye-toggle:hover { color: #ffffff; }
+
+  .test-output-panel {
+    display: none;
+    background: var(--card-sunken);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-sm);
+    padding: 9px 12px;
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    max-height: 160px;
+    overflow-y: auto;
+  }
+  .test-output-panel.show { display: block; }
+  .test-output-panel .good { color: var(--ok); }
+  .test-output-panel .bad { color: var(--err); }
+
+  /* Toast Notification */
+  #toast {
+    position: fixed;
+    bottom: 22px;
+    right: 22px;
+    background: var(--card-raised);
+    border: 1px solid var(--c-border-hover);
+    box-shadow: var(--c-hi), 0 8px 24px rgba(0, 0, 0, 0.5);
+    color: #ffffff;
+    padding: 9px 15px;
+    border-radius: var(--r-sm);
+    font-size: 12.5px;
+    font-weight: 500;
+    z-index: 100;
+    opacity: 0;
+    transform: translateY(6px);
+    transition: all 0.16s var(--ease-out);
+    pointer-events: none;
+  }
+
+  #toast.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  #toast.ok { border-color: rgba(16, 185, 129, 0.4); }
+  #toast.bad { border-color: rgba(239, 68, 68, 0.4); }
+</style>
+</head>
+<body>
+
+<!-- =========================================================================
+     APP HEADER
+     ========================================================================= -->
+<header>
+  <div class="header-brand">
+    <div class="brand-logo">AG</div>
+    <div class="brand-text-wrap">
+      <h1 class="brand-title">AI Gateway</h1>
+      <span class="brand-badge">Software Console v0.1.0</span>
+    </div>
+
+    <!-- Segmented Nav Tabs -->
+    <nav class="nav-tabs" aria-label="Main Navigation">
+      <button class="nav-tab-btn active" data-tab="tab-chat">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+        Trò chuyện (Playground)
+      </button>
+      <button class="nav-tab-btn" data-tab="tab-dashboard">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+        Cấu hình & Giám sát
+      </button>
+    </nav>
+  </div>
+
+  <div class="header-telemetry">
+    <div class="pill-badge">
+      <span class="dot-indicator pulse" id="live-dot"></span>
+      <span id="live-text">trực tuyến</span>
+    </div>
+    <div class="pill-badge" id="pill-strategy">
+      xoay vòng <b>round_robin</b>
+    </div>
+    <div class="pill-badge" id="pill-uptime">
+      uptime <b>0s</b>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- =======================================================================
+       TAB 1: CHAT PLAYGROUND (Software Frame)
+       ======================================================================= -->
+  <div class="tab-pane active" id="tab-chat">
+    <div class="chat-app-frame">
+      <!-- Toolbar -->
+      <div class="chat-header-bar">
+        <div class="chat-controls-left">
+          <div class="model-select-wrapper">
+            <label for="chat-model-select">Model:</label>
+            <select id="chat-model-select" class="mono">
+              <option value="auto">auto — Tự động xoay tua provider</option>
+            </select>
+          </div>
+
+          <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--muted); cursor: pointer;">
+            <input type="checkbox" id="chat-stream-toggle" checked />
+            <span>Streaming SSE</span>
+          </label>
+        </div>
+
+        <div class="chat-controls-right">
+          <button class="btn sm ghost" id="btn-toggle-drawer">⚙ Tham số</button>
+          <button class="btn sm ghost" id="btn-clear-history">Làm mới</button>
+        </div>
+      </div>
+
+      <!-- Advanced Drawer (System Prompt & Temperature) -->
+      <div class="chat-drawer" id="chat-drawer">
+        <div class="drawer-grid">
+          <label class="field">
+            <span>System Prompt</span>
+            <input id="chat-system-input" placeholder="Ví dụ: Bạn là kỹ sư phần mềm cao cấp, trả lời ngắn gọn, chuẩn xác." />
+          </label>
+          <label class="field">
+            <span>Temperature (0.0 - 1.0)</span>
+            <input type="number" id="chat-temp-input" min="0" max="1" step="0.1" value="0.7" class="mono" />
+          </label>
+          <label class="field">
+            <span>Max Tokens</span>
+            <input type="number" id="chat-max-tokens" placeholder="Mặc định" class="mono" />
+          </label>
+        </div>
+      </div>
+
+      <!-- Messages Viewport -->
+      <div class="chat-viewport" id="chat-messages-container">
+        <!-- Clean Empty State -->
+        <div class="chat-empty-state" id="chat-empty-state">
+          <div class="empty-badge-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          </div>
+          <h3>AI Gateway Playground</h3>
+          <p>Trải nghiệm tốc độ suy luận siêu nhanh kết hợp giữa lõi Rust và 5 nhà cung cấp AI miễn phí. Hãy nhập câu hỏi hoặc chọn mẫu bên dưới:</p>
+          <div class="prompt-chips-grid">
+            <div class="prompt-chip" data-prompt="Viết cho tôi hàm binary search bằng Rust chuẩn idiomatic và giải thích ngắn gọn.">
+              🦀 Thuật toán Binary Search bằng Rust
+            </div>
+            <div class="prompt-chip" data-prompt="Giải thích cơ chế Round-robin và Failover của AI Gateway này bằng tiếng Việt.">
+              ⚡ Cơ chế xoay tua của AI Gateway
+            </div>
+            <div class="prompt-chip" data-prompt="Viết một script Node.js gọi vào AI Gateway endpoint http://127.0.0.1:8080/v1/chat/completions.">
+              📦 Script gọi API OpenAI Compatible
+            </div>
+            <div class="prompt-chip" data-prompt="Liệt kê 5 best practices khi thiết kế hệ thống Microservices backend.">
+              🏗 5 Best practices cho Microservices
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Composer Bar -->
+      <div class="chat-composer">
+        <div class="composer-input-box">
+          <textarea class="chat-textarea" id="chat-user-input" rows="1" placeholder="Nhập tin nhắn... (Enter gửi, Shift+Enter xuống dòng)"></textarea>
+          <button class="btn primary sm" id="btn-send-chat">Gửi ↵</button>
+          <button class="btn danger sm" id="btn-stop-chat" style="display: none;">Dừng ■</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =======================================================================
+       TAB 2: CONFIGURATION & TELEMETRY (Software Flow)
+       ======================================================================= -->
+  <div class="tab-pane" id="tab-dashboard">
+    <div class="dashboard-flow">
+      <!-- Quick Integration Bar -->
+      <div class="quick-connect-banner">
+        <div class="quick-item-box">
+          <div class="quick-item-label">Endpoint URL</div>
+          <div class="quick-val-pill">
+            <span>http://127.0.0.1:8080/v1</span>
+            <button class="btn-copy-tag" onclick="copyText('http://127.0.0.1:8080/v1', this)">Chép</button>
+          </div>
+        </div>
+        <div class="quick-item-box">
+          <div class="quick-item-label">Client API Key</div>
+          <div class="quick-val-pill">
+            <span>sk-roo-code-free-gateway</span>
+            <button class="btn-copy-tag" onclick="copyText('sk-roo-code-free-gateway', this)">Chép</button>
+          </div>
+        </div>
+        <div class="quick-item-box">
+          <div class="quick-item-label">Model Gợi Ý Lập Trình</div>
+          <div class="quick-val-pill">
+            <span>qwen/qwen3.8-27b</span>
+            <button class="btn-copy-tag" onclick="copyText('qwen/qwen3.8-27b', this)">Chép</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Free Tier Limits & Quotas Section -->
+      <div class="software-card">
+        <div class="card-header-bar">
+          <div>
+            <h2 class="card-heading">Hạn mức Miễn phí & Định mức Nhà Cung Cấp (Free Tier Quota & Limits)</h2>
+            <div class="card-subtext">Tổng hạn mức hệ thống: <b>~22.000+ requests/ngày + Vô hạn Offline (Ollama GPU)</b> · Tự động vượt rate-limit và luân chuyển tài khoản trong &lt;1ms</div>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <div class="pill-badge">Đã gọi: <b id="quota-total-requests">0</b> req</div>
+            <div class="pill-badge">Thành công: <b id="quota-success-rate" class="text-ok">100%</b></div>
+            <div class="pill-badge" id="quota-cooldown-pill" style="display: none;">Đang Cooldown: <b id="quota-cooldown-count" class="text-warn">0</b></div>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="telemetry-table">
+            <thead>
+              <tr>
+                <th>Nhà cung cấp</th>
+                <th>Giới hạn Ngày (RPD)</th>
+                <th>Giới hạn Phút (RPM)</th>
+                <th>Giới hạn Token (TPM)</th>
+                <th>Thời điểm Reset</th>
+                <th style="text-align: right;">Đã gọi (phiên này)</th>
+                <th>Đặc điểm nổi bật</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong style="color: #f97316;">⚡ Groq</strong></td>
+                <td><b>~14.400</b> req/ngày</td>
+                <td>30 req/phút</td>
+                <td>6.000 tokens/phút</td>
+                <td>Rolling minute (hồi sau 60s)</td>
+                <td class="num" id="quota-used-groq">0</td>
+                <td><span class="text-ok">✓ Siêu tốc LPU (~400ms)</span></td>
+              </tr>
+              <tr>
+                <td><strong style="color: #60a5fa;">✦ Google Gemini</strong></td>
+                <td><b>1.500</b> req/ngày</td>
+                <td>15 req/phút</td>
+                <td>1.000.000 tokens/phút</td>
+                <td>07:00 AM VN (0h UTC)</td>
+                <td class="num" id="quota-used-gemini">0</td>
+                <td><span class="text-ok">✓ Ngữ cảnh dài 1M tokens</span></td>
+              </tr>
+              <tr>
+                <td><strong style="color: #f59e0b;">☁ Cloudflare Workers AI</strong></td>
+                <td><b>~2.000</b> req/ngày (10k Neurons)</td>
+                <td>Không giới hạn cố định</td>
+                <td>Mạng Edge phân tán</td>
+                <td>07:00 AM VN (0h UTC)</td>
+                <td class="num" id="quota-used-cloudflare">0</td>
+                <td><span class="text-ok">✓ Độ trễ thấp toàn cầu</span></td>
+              </tr>
+              <tr>
+                <td><strong style="color: #a855f7;">❖ OpenRouter</strong></td>
+                <td><b>~400</b> req/ngày (2 keys)</td>
+                <td>20 req/phút</td>
+                <td>Theo model :free</td>
+                <td>07:00 AM VN (0h UTC)</td>
+                <td class="num" id="quota-used-openrouter">0</td>
+                <td><span class="text-ok">✓ Model mã nguồn mở</span></td>
+              </tr>
+              <tr>
+                <td><strong style="color: #22c55e;">👁 NVIDIA NIM</strong></td>
+                <td><b>1.000</b> credits khởi tạo</td>
+                <td>40 req/phút</td>
+                <td>Tuỳ model</td>
+                <td>Dùng hết nạp key mới</td>
+                <td class="num" id="quota-used-nvidia">0</td>
+                <td><span class="text-ok">✓ Nemotron-3.5-Bolt (~1.5s)</span></td>
+              </tr>
+              <tr>
+                <td><strong style="color: #10b981;">🦙 Ollama Local (Offline)</strong></td>
+                <td><b>Không giới hạn</b> (Vô hạn)</td>
+                <td>Theo tốc độ GPU máy tính</td>
+                <td>Gemma 4 Fast (9.6GB)</td>
+                <td>Không có hạn mức</td>
+                <td class="num" id="quota-used-ollama">0</td>
+                <td><span class="text-ok">✓ Chạy trên GPU máy, 0.73s, offline</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Telemetry Table Card -->
+      <div class="software-card">
+        <div class="card-header-bar">
+          <div>
+            <h2 class="card-heading">Giám sát Nhà Cung Cấp & Tài Khoản (Telemetry)</h2>
+            <div class="card-subtext">Lưu lượng yêu cầu, tỉ lệ thành công và thời gian cooldown thời gian thực.</div>
+          </div>
+          <button class="btn sm" id="btn-refresh">Làm mới số liệu</button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="telemetry-table">
+            <thead>
+              <tr>
+                <th>Nhà cung cấp</th>
+                <th>Tài khoản</th>
+                <th style="text-align: right;">Yêu cầu</th>
+                <th style="text-align: right;">Thành công</th>
+                <th style="text-align: right;">Lỗi</th>
+                <th>Lần cuối</th>
+                <th style="text-align: right;">Cooldown</th>
+                <th>Lỗi gần nhất</th>
+              </tr>
+            </thead>
+            <tbody id="status-body">
+              <tr><td colspan="8" style="text-align: center; color: var(--muted); padding: 20px;">Đang tải dữ liệu telemetry...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Global Settings Card -->
+      <div class="software-card">
+        <div class="card-header-bar">
+          <div>
+            <h2 class="card-heading">Cài đặt Hệ Thống Gateway</h2>
+            <div class="card-subtext">Tệp cấu hình: <span class="mono" id="cfg-path">config.json</span></div>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn primary sm" id="btn-save">Lưu cấu hình</button>
+            <button class="btn ghost sm" id="btn-reload">Tải lại từ file</button>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-top: 10px;">
+          <label class="field">
+            <span>Địa chỉ lắng nghe (Listen)</span>
+            <input class="mono" data-path="listen" placeholder="127.0.0.1:8080" />
+          </label>
+          <label class="field">
+            <span>Gateway API Key</span>
+            <input class="mono" type="password" data-path="gateway_api_key" placeholder="Mở tự do nếu để trống" autocomplete="off" />
+          </label>
+          <label class="field">
+            <span>Chiến lược xoay tua (Strategy)</span>
+            <select data-path="strategy">
+              <option value="round_robin">round_robin (Chia đều lần lượt)</option>
+              <option value="random">random (Ngẫu nhiên)</option>
+              <option value="sequential">sequential (Ưu tiên từ trên xuống)</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Thời gian Cooldown (giây)</span>
+            <input type="number" class="mono" data-path="cooldown_secs" min="5" max="3600" />
+          </label>
+          <label class="field">
+            <span>Số lần thử lại tối đa (Attempts)</span>
+            <input type="number" class="mono" data-path="max_attempts" min="1" max="32" />
+          </label>
+        </div>
+      </div>
+
+      <!-- Providers Cards Grid -->
+      <div>
+        <div class="card-header-bar" style="margin-bottom: 12px;">
+          <div>
+            <h2 class="card-heading">Danh sách Nhà Cung Cấp AI (6 Providers)</h2>
+            <div class="card-subtext">Quản lý các tài khoản miễn phí và API endpoint tương ứng.</div>
+          </div>
+          <button class="btn sm" id="btn-add-provider">+ Thêm nhà cung cấp tuỳ chỉnh</button>
+        </div>
+
+        <div class="providers-grid" id="providers">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div id="toast"></div>
+
+<!-- =========================================================================
+     JAVASCRIPT LOGIC
+     ========================================================================= -->
+<script>
+(function () {
+  "use strict";
+
+  var app = {
+    cfg: null,
+    meta: null,
+    key: ""
+  };
+
+  var providerIcons = {
+    gemini: { icon: "✦", color: "#60a5fa" },
+    groq: { icon: "⚡", color: "#f97316" },
+    nvidia: { icon: "👁", color: "#22c55e" },
+    cloudflare: { icon: "☁", color: "#f59e0b" },
+    openrouter: { icon: "❖", color: "#a855f7" },
+    ollama: { icon: "🦙", color: "#10b981" }
+  };
+
+  var providerTemplateMeta = {
+    gemini: { base: "https://generativelanguage.googleapis.com", model: "gemini-3.1-flash-lite" },
+    openai: { base: "https://api.groq.com/openai/v1", model: "qwen/qwen3.8-27b" }
+  };
+
+  function $(sel) { return document.querySelector(sel); }
+  function esc(s) {
+    if (s == null) return "";
+    return String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  function getPath(obj, path) {
+    var parts = path.split(".");
+    var cur = obj;
+    for (var i = 0; i < parts.length; i++) {
+      if (cur == null) return undefined;
+      cur = cur[parts[i]];
+    }
+    return cur;
+  }
+
+  function setPath(obj, path, val) {
+    var parts = path.split(".");
+    var cur = obj;
+    for (var i = 0; i < parts.length - 1; i++) {
+      var k = parts[i];
+      if (cur[k] == null) {
+        cur[k] = /^\d+$/.test(parts[i + 1]) ? [] : {};
+      }
+      cur = cur[k];
+    }
+    cur[parts[parts.length - 1]] = val;
+  }
+
+  function toast(msg, kind) {
+    var el = $("#toast");
+    el.textContent = msg;
+    el.className = "show " + (kind || "");
+    clearTimeout(el._timer);
+    el._timer = setTimeout(function () { el.className = ""; }, 2400);
+  }
+
+  window.copyText = function (text, btn) {
+    navigator.clipboard.writeText(text).then(function () {
+      var old = btn.textContent;
+      btn.textContent = "Đã chép ✓";
+      setTimeout(function () { btn.textContent = old; }, 1600);
+    });
+  };
+
+  async function api(method, path, body) {
+    var headers = { "Content-Type": "application/json" };
+    if (app.key) headers["Authorization"] = "Bearer " + app.key;
+    var res = await fetch(path, {
+      method: method,
+      headers: headers,
+      body: body ? JSON.stringify(body) : undefined
+    });
+    var text = await res.text();
+    var data = null;
+    try { data = JSON.parse(text); } catch (_) {}
+    if (res.status === 401) {
+      var key = window.prompt("Gateway yêu cầu API key để truy cập:");
+      if (key) {
+        app.key = key.trim();
+        return api(method, path, body);
+      }
+    }
+    if (!res.ok) {
+      var msg = (data && data.error && data.error.message) ? data.error.message : (text || res.statusText);
+      throw new Error(msg);
+    }
+    return data;
+  }
+
+  function fmtUptime(secs) {
+    secs = Math.max(0, Math.floor(secs));
+    var h = Math.floor(secs / 3600), m = Math.floor((secs % 3600) / 60), s = secs % 60;
+    if (h) return h + "h " + m + "m";
+    if (m) return m + "m " + s + "s";
+    return s + "s";
+  }
+
+  function fmtAgo(ms) {
+    if (!ms) return "—";
+    var diff = Math.max(0, Math.floor((Date.now() - ms) / 1000));
+    if (diff < 60) return diff + "s trước";
+    if (diff < 3600) return Math.floor(diff / 60) + "m trước";
+    if (diff < 86400) return Math.floor(diff / 3600) + "h trước";
+    return Math.floor(diff / 86400) + "d trước";
+  }
+
+  function renderSettings() {
+    var cfg = app.cfg;
+    document.querySelectorAll("[data-path]").forEach(function (el) {
+      var path = el.getAttribute("data-path");
+      if (path.indexOf("providers.") === 0) return;
+      var val = getPath(cfg, path);
+      if (el.type === "checkbox") el.checked = !!val;
+      else el.value = val == null ? "" : val;
+    });
+    $("#cfg-path").textContent = (app.meta && app.meta.config_path) || "config.json";
+  }
+
+  function accountRow(p, i, a, j) {
+    return (
+      '<div class="acc-row-line" data-p="' + i + '" data-a="' + j + '">' +
+        '<input type="checkbox" title="Bật account" data-path="providers.' + i + '.accounts.' + j + '.enabled" ' + (a.enabled ? 'checked' : '') + ' />' +
+        '<input class="mono" data-path="providers.' + i + '.accounts.' + j + '.name" placeholder="Tên" value="' + esc(a.name) + '" spellcheck="false" />' +
+        '<div class="key-eye-wrapper">' +
+          '<input class="mono" type="password" data-path="providers.' + i + '.accounts.' + j + '.api_key" placeholder="API key" value="' + esc(a.api_key) + '" spellcheck="false" autocomplete="off" />' +
+          '<button class="btn-eye-toggle" data-action="eye" title="Hiện/ẩn key">👁</button>' +
+        '</div>' +
+        '<input class="mono" data-path="providers.' + i + '.accounts.' + j + '.account_id" placeholder="Account ID" value="' + esc(a.account_id || "") + '" spellcheck="false" />' +
+        '<button class="btn sm ok" data-action="test-account" data-p="' + i + '" data-a="' + j + '">Test</button>' +
+        '<button class="btn sm danger" data-action="del-account" data-p="' + i + '" data-a="' + j + '" title="Xoá account">✕</button>' +
+      '</div>'
+    );
+  }
+
+  function providerCard(p, i) {
+    var accounts = p.accounts || [];
+    var rows = accounts.map(function (a, j) { return accountRow(p, i, a, j); }).join("");
+    var kindOptions = (app.meta && app.meta.kinds ? app.meta.kinds : ["gemini", "openai"]).map(function (k) {
+      return '<option value="' + esc(k) + '"' + (p.kind === k ? " selected" : "") + '>' + esc(k) + '</option>';
+    }).join("");
+    var pMeta = providerIcons[p.id] || { icon: "⚙", color: "#60a5fa" };
+
+    return (
+      '<div class="provider-card ' + (p.enabled ? "on" : "off") + '" data-p="' + i + '">' +
+        '<div class="provider-top-bar">' +
+          '<div class="provider-brand-wrap">' +
+            '<div class="provider-badge-icon" style="color: ' + pMeta.color + ';">' + pMeta.icon + '</div>' +
+            '<div class="provider-title">' +
+              '<strong>' + esc(p.label || p.id) + '</strong>' +
+              '<span class="provider-sub">' + esc(p.id) + ' · ' + esc(p.kind) + '</span>' +
+            '</div>' +
+          '</div>' +
+          '<div style="display: flex; align-items: center; gap: 8px;">' +
+            '<label style="display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; color: var(--muted); cursor: pointer;">' +
+              '<input type="checkbox" data-path="providers.' + i + '.enabled" ' + (p.enabled ? "checked" : "") + ' />' +
+              '<span>' + (p.enabled ? "Đang bật" : "Tắt") + '</span>' +
+            '</label>' +
+            '<button class="btn sm ok" data-action="test-provider" data-p="' + i + '">Test provider</button>' +
+            '<button class="btn sm danger" data-action="del-provider" data-p="' + i + '" title="Xoá">✕</button>' +
+          '</div>' +
+        '</div>' +
+
+        '<div class="provider-fields">' +
+          '<label class="field"><span>ID Provider</span><input class="mono" data-path="providers.' + i + '.id" value="' + esc(p.id) + '" spellcheck="false" /></label>' +
+          '<label class="field"><span>Chuẩn API</span><select class="mono" data-path="providers.' + i + '.kind">' + kindOptions + '</select></label>' +
+          '<label class="field span-2"><span>Base URL</span><input class="mono" data-path="providers.' + i + '.base_url" value="' + esc(p.base_url) + '" spellcheck="false" /></label>' +
+          '<label class="field span-2"><span>Model Mặc Định</span><input class="mono" data-path="providers.' + i + '.model" value="' + esc(p.model) + '" spellcheck="false" /></label>' +
+          '<label class="field span-2"><span>Tên Hiển Thị</span><input data-path="providers.' + i + '.label" value="' + esc(p.label || "") + '" /></label>' +
+        '</div>' +
+
+        '<div class="accounts-box">' +
+          '<div class="accounts-head">' +
+            '<span style="font-weight: 600; color: var(--ink);">Tài khoản &amp; API Keys (' + accounts.length + ')</span>' +
+            '<button class="btn sm primary" data-action="add-account" data-p="' + i + '">+ Thêm tài khoản</button>' +
+          '</div>' +
+          (accounts.length > 0 ? (
+            '<div style="display: grid; grid-template-columns: 20px 96px 1fr 96px 46px 30px; gap: 6px; font-size: 10.5px; color: var(--muted); margin-bottom: 4px; padding: 0 2px;">' +
+              '<span>Bật</span><span>Tên</span><span>API Key</span><span>Account ID</span><span></span><span></span>' +
+            '</div>'
+          ) : '') +
+          (rows || '<div style="font-size: 11.5px; color: var(--muted); text-align: center; padding: 12px;">Chưa có tài khoản nào. Hãy bấm nút "+ Thêm tài khoản" bên dưới để thêm API key xoay tua.</div>') +
+          '<div style="margin-top: 8px;">' +
+            '<button class="btn sm" data-action="add-account" data-p="' + i + '" style="width: 100%; justify-content: center; border-style: dashed; background: rgba(255,255,255,0.02);">+ Thêm tài khoản mới cho ' + esc(p.label || p.id) + '</button>' +
+          '</div>' +
+        '</div>' +
+
+        '<div class="test-output-panel" id="test-out-' + i + '"></div>' +
+      '</div>'
+    );
+  }
+
+  function renderProviders() {
+    var list = (app.cfg && app.cfg.providers) || [];
+    $("#providers").innerHTML = list.map(providerCard).join("");
+  }
+
+  function renderAll() {
+    renderSettings();
+    renderProviders();
+    updateChatModelSelect();
+  }
+
+  function readInput(el) {
+    if (el.type === "checkbox") return el.checked;
+    if (el.type === "number") {
+      var n = Number(el.value);
+      return isNaN(n) ? 0 : n;
+    }
+    return el.value;
+  }
+
+  document.addEventListener("input", function (ev) {
+    var el = ev.target;
+    var path = el.getAttribute && el.getAttribute("data-path");
+    if (!path || !app.cfg) return;
+    setPath(app.cfg, path, readInput(el));
+    if (path === "strategy") updateStrategyPill();
+    if (path.endsWith(".enabled")) {
+      var card = el.closest(".provider-card");
+      if (card) {
+        card.classList.toggle("on", !!el.checked);
+        card.classList.toggle("off", !el.checked);
+        var span = card.querySelector(".provider-top-bar label span");
+        if (span) span.textContent = el.checked ? "Đang bật" : "Tắt";
+      }
+    }
+    if (path.endsWith(".label") || path.endsWith(".id")) {
+      var cardEl = el.closest(".provider-card");
+      if (cardEl) {
+        var provider = app.cfg.providers[Number(cardEl.getAttribute("data-p"))];
+        if (provider) {
+          var s = cardEl.querySelector(".provider-title strong");
+          if (s) s.textContent = provider.label || provider.id;
+          var k = cardEl.querySelector(".provider-sub");
+          if (k) k.textContent = provider.id + " · " + provider.kind;
+        }
+      }
+    }
+  });
+
+  document.addEventListener("change", function (ev) {
+    var el = ev.target;
+    var path = el.getAttribute && el.getAttribute("data-path");
+    if (!path || !app.cfg) return;
+    if (el.tagName === "SELECT" || el.type === "checkbox") {
+      setPath(app.cfg, path, readInput(el));
+    }
+  });
+
+  document.addEventListener("click", function (ev) {
+    var btn = ev.target.closest("[data-action]");
+    if (!btn) return;
+    var action = btn.getAttribute("data-action");
+    var pi = Number(btn.getAttribute("data-p"));
+    var ai = Number(btn.getAttribute("data-a"));
+
+    if (action === "eye") {
+      var inp = btn.parentElement.querySelector("input");
+      inp.type = inp.type === "password" ? "text" : "password";
+      return;
+    }
+    if (action === "add-account") {
+      var p = app.cfg.providers[pi];
+      var n = (p.accounts || []).length + 1;
+      p.accounts = p.accounts || [];
+      p.accounts.push({ name: "account-" + n, api_key: "", account_id: "", enabled: true });
+      renderProviders();
+      return;
+    }
+    if (action === "del-account") {
+      app.cfg.providers[pi].accounts.splice(ai, 1);
+      renderProviders();
+      return;
+    }
+    if (action === "del-provider") {
+      if (!window.confirm("Xoá provider '" + app.cfg.providers[pi].id + "'?")) return;
+      app.cfg.providers.splice(pi, 1);
+      renderProviders();
+      return;
+    }
+    if (action === "test-account") {
+      var pv = app.cfg.providers[pi];
+      var acct = pv.accounts[ai];
+      runTest({ provider: pv.id, account: acct.name }, pi, "account " + acct.name);
+      return;
+    }
+    if (action === "test-provider") {
+      var pp = app.cfg.providers[pi];
+      runTest({ provider: pp.id }, pi, "provider " + pp.id);
+      return;
+    }
+  });
+
+  async function runTest(payload, pi, label) {
+    var out = $("#test-out-" + pi);
+    if (out) {
+      out.classList.add("show");
+      out.textContent = "Đang kiểm tra " + label + "...";
+    }
+    try {
+      var data = await api("POST", "/api/test", payload);
+      var lines = (data.results || []).map(function (r) {
+        if (r.ok) {
+          return "✓ " + r.account + " (" + r.ms + "ms) → " + (r.reply || "pong");
+        }
+        return "✗ " + r.account + " (" + r.ms + "ms) [" + (r.status || "network") + "] " + (r.error || "");
+      });
+      var isOk = lines.some(function (l) { return l.charAt(0) === "✓"; });
+      toast("Test " + label + (isOk ? " thành công" : " thất bại"), isOk ? "ok" : "bad");
+      if (out) {
+        out.innerHTML = '<div style="color: var(--muted); margin-bottom: 3px;">' + esc(label + " · " + data.model) + '</div>' +
+          lines.map(function (l) {
+            return l.charAt(0) === "✓" ? '<div class="good">' + esc(l) + '</div>' : '<div class="bad">' + esc(l) + '</div>';
+          }).join("");
+      }
+    } catch (e) {
+      toast("Test lỗi: " + e.message, "bad");
+      if (out) out.innerHTML = '<div class="bad">' + esc(e.message) + '</div>';
+    }
+    refreshStatus();
+  }
+
+  function updateStrategyPill() {
+    var s = (app.cfg && app.cfg.strategy) || "round_robin";
+    var names = { round_robin: "chia đều", random: "ngẫu nhiên", sequential: "tuần tự" };
+    $("#pill-strategy").innerHTML = "xoay vòng <b>" + esc(names[s] || s) + "</b>";
+  }
+
+  async function refreshStatus() {
+    if (!app.cfg) return;
+    try {
+      var st = await api("GET", "/api/status");
+      renderStatus(st);
+      $("#live-dot").className = "dot-indicator pulse";
+      $("#live-text").textContent = "trực tuyến";
+      $("#pill-uptime").innerHTML = "uptime <b>" + fmtUptime(st.uptime_secs) + "</b>";
+      updateStrategyPill();
+    } catch (e) {
+      $("#live-dot").className = "dot-indicator bad";
+      $("#live-text").textContent = "mất kết nối";
+    }
+  }
+
+  function renderStatus(st) {
+    var rows = [];
+    var totalReq = 0;
+    var totalSuccess = 0;
+    var cooldownCount = 0;
+    var providerTotals = { gemini: 0, groq: 0, cloudflare: 0, openrouter: 0, nvidia: 0 };
+
+    (st.providers || []).forEach(function (p) {
+      var pTotal = 0;
+      if (!p.accounts.length) {
+        rows.push('<tr><td style="font-weight: 600;">' + esc(p.id) + '</td><td colspan="7" style="color: var(--muted);">chưa có account</td></tr>');
+        return;
+      }
+      p.accounts.forEach(function (a) {
+        var s = a.stat || {};
+        var cd = a.cooldown_secs || 0;
+        var dotClass = !a.enabled ? "bad" : cd > 0 ? "warn" : "ok";
+        var reqs = s.requests || 0;
+        pTotal += reqs;
+        totalReq += reqs;
+        totalSuccess += (s.success || 0);
+        if (cd > 0) cooldownCount++;
+
+        rows.push(
+          '<tr>' +
+            '<td><strong style="color: var(--ink);">' + esc(p.id) + '</strong> <span style="font-size: 10px; color: var(--muted);">' + (p.enabled ? "" : "(tắt)") + '</span></td>' +
+            '<td><span class="dot-indicator ' + dotClass + '" style="display: inline-block; vertical-align: middle; margin-right: 6px;"></span>' + esc(a.name) + '</td>' +
+            '<td class="num">' + reqs + '</td>' +
+            '<td class="num text-ok">' + (s.success || 0) + '</td>' +
+            '<td class="num ' + ((s.errors || 0) > 0 ? "text-err" : "") + '">' + (s.errors || 0) + '</td>' +
+            '<td>' + fmtAgo(s.last_used) + '</td>' +
+            '<td class="num ' + (cd > 0 ? "text-warn" : "") + '">' + (cd > 0 ? cd + "s" : "—") + '</td>' +
+            '<td style="color: var(--muted); max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">' + (s.last_error ? esc(s.last_error) : "—") + '</td>' +
+          '</tr>'
+        );
+      });
+      if (providerTotals[p.id] !== undefined) {
+        providerTotals[p.id] = pTotal;
+      }
+    });
+
+    if ($("#quota-total-requests")) $("#quota-total-requests").textContent = totalReq;
+    if ($("#quota-success-rate")) {
+      var rate = totalReq > 0 ? Math.round((totalSuccess / totalReq) * 100) + "%" : "100%";
+      $("#quota-success-rate").textContent = rate;
+    }
+    if ($("#quota-cooldown-count")) {
+      $("#quota-cooldown-count").textContent = cooldownCount;
+      var cPill = $("#quota-cooldown-pill");
+      if (cPill) cPill.style.display = cooldownCount > 0 ? "inline-flex" : "none";
+    }
+    for (var pid in providerTotals) {
+      var el = $("#quota-used-" + pid);
+      if (el) el.textContent = providerTotals[pid];
+    }
+
+    $("#status-body").innerHTML = rows.join("") || '<tr><td colspan="8" style="text-align: center; color: var(--muted); padding: 16px;">Chưa có dữ liệu</td></tr>';
+  }
+
+  async function loadConfig() {
+    var data = await api("GET", "/api/config");
+    app.cfg = data.config;
+    app.meta = data;
+    renderAll();
+    refreshStatus();
+  }
+
+  $("#btn-save").addEventListener("click", async function () {
+    if (!app.cfg) return;
+    var btn = this;
+    btn.disabled = true;
+    btn.textContent = "Đang lưu...";
+    try {
+      var data = await api("PUT", "/api/config", { config: app.cfg });
+      app.cfg = data.config;
+      renderAll();
+      toast("Đã lưu cấu hình", "ok");
+      refreshStatus();
+    } catch (e) {
+      toast("Lưu thất bại: " + e.message, "bad");
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Lưu cấu hình";
+    }
+  });
+
+  $("#btn-reload").addEventListener("click", async function () {
+    try {
+      var data = await api("POST", "/api/config/reload", {});
+      app.cfg = data.config;
+      renderAll();
+      toast("Đã nạp lại config.json", "ok");
+      refreshStatus();
+    } catch (e) {
+      toast("Nạp lại thất bại: " + e.message, "bad");
+    }
+  });
+
+  $("#btn-add-provider").addEventListener("click", function () {
+    var ids = {};
+    app.cfg.providers.forEach(function (p) { ids[p.id] = true; });
+    var n = 1;
+    while (ids["custom-" + n]) n++;
+    app.cfg.providers.push({
+      id: "custom-" + n,
+      kind: "openai",
+      label: "Nhà cung cấp tuỳ chỉnh " + n,
+      enabled: true,
+      base_url: providerTemplateMeta.openai.base,
+      model: providerTemplateMeta.openai.model,
+      extra_headers: {},
+      accounts: [{ name: "account-1", api_key: "", account_id: "", enabled: true }]
+    });
+    renderProviders();
+    toast("Đã thêm provider, hãy bấm Lưu cấu hình", "ok");
+  });
+
+  $("#btn-refresh").addEventListener("click", refreshStatus);
+
+  /* TAB NAVIGATION */
+  document.querySelectorAll(".nav-tab-btn").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      document.querySelectorAll(".nav-tab-btn").forEach(function (b) { b.classList.remove("active"); });
+      document.querySelectorAll(".tab-pane").forEach(function (p) { p.classList.remove("active"); });
+      btn.classList.add("active");
+      var tid = btn.getAttribute("data-tab");
+      var pane = document.getElementById(tid);
+      if (pane) pane.classList.add("active");
+    });
+  });
+
+  /* CHAT PLAYGROUND */
+  var chatHistory = [];
+  var activeAbortController = null;
+
+  function updateChatModelSelect() {
+    var sel = $("#chat-model-select");
+    if (!sel || !app.cfg) return;
+    var current = sel.value || "auto";
+    var opts = ['<option value="auto">auto — Tự động xoay tua provider</option>'];
+    (app.cfg.providers || []).forEach(function (p) {
+      if (p.enabled) {
+        opts.push('<option value="' + esc(p.model) + '">' + esc(p.label || p.id) + ' (' + esc(p.model) + ')</option>');
+        opts.push('<option value="' + esc(p.id) + '/' + esc(p.model) + '">' + esc(p.id) + '/' + esc(p.model) + '</option>');
+      }
+    });
+    sel.innerHTML = opts.join("");
+    sel.value = current;
+  }
+
+  $("#btn-toggle-drawer").addEventListener("click", function () {
+    var d = $("#chat-drawer");
+    d.style.display = d.style.display === "block" ? "none" : "block";
+  });
+
+  $("#btn-clear-history").addEventListener("click", function () {
+    chatHistory = [];
+    $("#chat-messages-container").innerHTML =
+      '<div class="chat-empty-state" id="chat-empty-state">' +
+        '<div class="empty-badge-icon">' +
+          '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>' +
+        '</div>' +
+        '<h3>AI Gateway Playground</h3>' +
+        '<p>Trò chuyện đã được đặt lại. Hãy nhập câu hỏi bên dưới để bắt đầu.</p>' +
+      '</div>';
+    toast("Đã đặt lại lịch sử chat", "ok");
+  });
+
+  document.addEventListener("click", function (ev) {
+    var chip = ev.target.closest(".prompt-chip");
+    if (chip) {
+      var p = chip.getAttribute("data-prompt");
+      var inp = $("#chat-user-input");
+      if (inp && p) {
+        inp.value = p;
+        inp.focus();
+        $("#btn-send-chat").click();
+      }
+    }
+  });
+
+  var chatInputEl = $("#chat-user-input");
+  chatInputEl.addEventListener("input", function () {
+    this.style.height = "auto";
+    this.style.height = Math.min(this.scrollHeight, 160) + "px";
+  });
+  chatInputEl.addEventListener("keydown", function (ev) {
+    if (ev.key === "Enter" && !ev.shiftKey) {
+      ev.preventDefault();
+      $("#btn-send-chat").click();
+    }
+  });
+
+  function renderMarkdown(text) {
+    if (!text) return "";
+    var codeBlocks = [];
+    var processed = text.replace(/```([a-zA-Z0-9_\-\+]*)\n([\s\S]*?)```/g, function (_, lang, code) {
+      var idx = codeBlocks.length;
+      var l = (lang || "code").trim();
+      codeBlocks.push(
+        '<div class="code-block-wrap">' +
+          '<div class="code-block-header"><span>' + esc(l) + '</span><button class="btn-copy-code" onclick="copyCodeBlock(this)">Sao chép</button></div>' +
+          '<pre><code>' + esc(code) + '</code></pre>' +
+        '</div>'
+      );
+      return "@@@CODE_BLOCK_" + idx + "@@@";
+    });
+    processed = processed.replace(/`([^`]+)`/g, function (_, c) { return '<code>' + esc(c) + '</code>'; });
+    processed = processed.replace(/\*\*([^*]+)\*\*/g, function (_, b) { return '<strong>' + esc(b) + '</strong>'; });
+    processed = processed.replace(/\*([^*]+)\*/g, function (_, i) { return '<em>' + esc(i) + '</em>'; });
+    processed = processed.replace(/\n\n+/g, '</p><p>').replace(/\n/g, '<br/>');
+    processed = '<p>' + processed + '</p>';
+    codeBlocks.forEach(function (cb, idx) {
+      processed = processed.replace('<p>@@@CODE_BLOCK_' + idx + '@@@</p>', cb);
+      processed = processed.replace('@@@CODE_BLOCK_' + idx + '@@@', cb);
+    });
+    return processed;
+  }
+
+  window.copyCodeBlock = function (btn) {
+    var pre = btn.closest(".code-block-header").nextElementSibling;
+    if (pre && pre.querySelector("code")) {
+      navigator.clipboard.writeText(pre.querySelector("code").textContent).then(function () {
+        btn.textContent = "Đã chép ✓";
+        setTimeout(function () { btn.textContent = "Sao chép"; }, 1800);
+      });
+    }
+  };
+
+  function appendUserMessage(text) {
+    var container = $("#chat-messages-container");
+    var emptyState = $("#chat-empty-state");
+    if (emptyState) emptyState.remove();
+
+    var row = document.createElement("div");
+    row.className = "msg-row user";
+    row.innerHTML =
+      '<div class="msg-avatar">U</div>' +
+      '<div class="msg-bubble-wrap">' +
+        '<div class="msg-bubble">' + esc(text) + '</div>' +
+      '</div>';
+    container.appendChild(row);
+    container.scrollTop = container.scrollHeight;
+  }
+
+  function appendAssistantPlaceholder() {
+    var container = $("#chat-messages-container");
+    var row = document.createElement("div");
+    row.className = "msg-row assistant";
+    row.innerHTML =
+      '<div class="msg-avatar">AI</div>' +
+      '<div class="msg-bubble-wrap">' +
+        '<div class="msg-bubble" id="current-assistant-bubble">' +
+          '<span style="color: var(--muted); font-style: italic;">Đang xử lý qua Gateway...</span>' +
+        '</div>' +
+        '<div class="msg-meta-bar" id="current-assistant-info">Đang kết nối...</div>' +
+      '</div>';
+    container.appendChild(row);
+    container.scrollTop = container.scrollHeight;
+    return {
+      bubble: row.querySelector("#current-assistant-bubble"),
+      info: row.querySelector("#current-assistant-info")
+    };
+  }
+
+  $("#btn-send-chat").addEventListener("click", async function () {
+    var prompt = (chatInputEl.value || "").trim();
+    if (!prompt) return;
+
+    var model = $("#chat-model-select").value || "auto";
+    var wantsStream = $("#chat-stream-toggle").checked;
+    var systemPrompt = ($("#chat-system-input").value || "").trim();
+    var temperature = parseFloat($("#chat-temp-input").value) || 0.7;
+
+    chatInputEl.value = "";
+    chatInputEl.style.height = "auto";
+    appendUserMessage(prompt);
+    chatHistory.push({ role: "user", content: prompt });
+
+    var sendBtn = $("#btn-send-chat");
+    var stopBtn = $("#btn-stop-chat");
+    sendBtn.style.display = "none";
+    stopBtn.style.display = "inline-flex";
+
+    var placeholder = appendAssistantPlaceholder();
+    var bubble = placeholder.bubble;
+    var info = placeholder.info;
+    var container = $("#chat-messages-container");
+
+    activeAbortController = new AbortController();
+    var t0 = performance.now();
+
+    try {
+      var messagesPayload = [];
+      if (systemPrompt) {
+        messagesPayload.push({ role: "system", content: systemPrompt });
+      }
+      messagesPayload = messagesPayload.concat(chatHistory);
+
+      var headers = { "Content-Type": "application/json" };
+      if (app.key) headers["Authorization"] = "Bearer " + app.key;
+
+      var res = await fetch("/v1/chat/completions", {
+        method: "POST",
+        headers: headers,
+        signal: activeAbortController.signal,
+        body: JSON.stringify({
+          model: model,
+          stream: wantsStream,
+          temperature: temperature,
+          messages: messagesPayload
+        })
+      });
+
+      var provider = res.headers.get("x-ai-provider") || "";
+      var account = res.headers.get("x-ai-account") || "";
+
+      if (!res.ok) {
+        var errRaw = await res.text();
+        var errMsg = errRaw;
+        try {
+          var errJson = JSON.parse(errRaw);
+          if (errJson.error && errJson.error.message) errMsg = errJson.error.message;
+        } catch (_) {}
+        bubble.innerHTML = '<span style="color: var(--err)">Lỗi: ' + esc(errMsg) + '</span>';
+        info.textContent = "HTTP " + res.status;
+        refreshStatus();
+        return;
+      }
+
+      var fullResponseText = "";
+      if (wantsStream) {
+        var reader = res.body.getReader();
+        var decoder = new TextDecoder();
+        var isFirstChunk = true;
+
+        while (true) {
+          var chunkResult = await reader.read();
+          if (chunkResult.done) break;
+          var textChunk = decoder.decode(chunkResult.value, { stream: true });
+          var lines = textChunk.split("\n");
+
+          for (var i = 0; i < lines.length; i++) {
+            var line = lines[i];
+            if (!line.startsWith("data:")) continue;
+            var dataContent = line.slice(5).trim();
+            if (!dataContent || dataContent === "[DONE]") continue;
+            try {
+              var parsedObj = JSON.parse(dataContent);
+              var delta = parsedObj.choices && parsedObj.choices[0] && parsedObj.choices[0].delta;
+              if (delta && delta.content) {
+                if (isFirstChunk) {
+                  bubble.innerHTML = "";
+                  isFirstChunk = false;
+                }
+                fullResponseText += delta.content;
+                bubble.innerHTML = renderMarkdown(fullResponseText);
+                container.scrollTop = container.scrollHeight;
+              }
+            } catch (_) {}
+          }
+        }
+      } else {
+        var bodyJson = await res.json();
+        fullResponseText = bodyJson.choices && bodyJson.choices[0] && bodyJson.choices[0].message && bodyJson.choices[0].message.content;
+        bubble.innerHTML = renderMarkdown(fullResponseText || "");
+      }
+
+      var elapsedMs = Math.round(performance.now() - t0);
+      var tagHtml = provider
+        ? '<span class="msg-provider-tag">' + esc(provider) + (account ? ' / ' + esc(account) : '') + '</span>'
+        : '';
+      info.innerHTML = tagHtml + '<span>' + elapsedMs + ' ms</span>';
+      chatHistory.push({ role: "assistant", content: fullResponseText });
+      refreshStatus();
+    } catch (e) {
+      if (e.name === "AbortError") {
+        info.textContent = "Đã dừng phản hồi";
+      } else {
+        bubble.innerHTML = '<span style="color: var(--err)">Lỗi kết nối: ' + esc(e.message) + '</span>';
+        info.textContent = "Thất bại";
+      }
+    } finally {
+      bubble.removeAttribute("id");
+      info.removeAttribute("id");
+      sendBtn.style.display = "inline-flex";
+      stopBtn.style.display = "none";
+      activeAbortController = null;
+      chatInputEl.focus();
+    }
+  });
+
+  $("#btn-stop-chat").addEventListener("click", function () {
+    if (activeAbortController) {
+      activeAbortController.abort();
+    }
+  });
+
+  document.addEventListener("keydown", function (ev) {
+    if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === "s") {
+      ev.preventDefault();
+      $("#btn-save").click();
+    }
+  });
+
+  loadConfig().catch(function (e) {
+    toast("Không nạp được cấu hình: " + e.message, "bad");
+  });
+
+  setInterval(refreshStatus, 4000);
+})();
+</script>
+</body>
+</html>

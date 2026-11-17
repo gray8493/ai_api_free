@@ -1,0 +1,112 @@
+{
+  "listen": "127.0.0.1:8080",
+  "gateway_api_key": "",
+  "strategy": "sequential",
+  "cooldown_secs": 60,
+  "max_attempts": 12,
+  "providers": [
+    {
+      "id": "gemini",
+      "kind": "gemini",
+      "label": "Google Gemini",
+      "enabled": true,
+      "base_url": "https://generativelanguage.googleapis.com/v1beta",
+      "model": "gemini-3.1-flash-lite",
+      "extra_headers": {},
+      "accounts": [
+        {
+          "name": "account-1",
+          "api_key": "",
+          "account_id": "",
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "id": "openrouter",
+      "kind": "openai",
+      "label": "OpenRouter",
+      "enabled": true,
+      "base_url": "https://openrouter.ai/api/v1",
+      "model": "openrouter/free",
+      "extra_headers": {},
+      "accounts": [
+        {
+          "name": "account-1",
+          "api_key": "",
+          "account_id": "",
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "id": "nvidia",
+      "kind": "openai",
+      "label": "NVIDIA NIM",
+      "enabled": true,
+      "base_url": "https://integrate.api.nvidia.com/v1",
+      "model": "nvidia/nemotron-3.5-bolt-e4b",
+      "extra_headers": {},
+      "accounts": [
+        {
+          "name": "account-1",
+          "api_key": "",
+          "account_id": "",
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "id": "groq",
+      "kind": "openai",
+      "label": "Groq",
+      "enabled": true,
+      "base_url": "https://api.groq.com/openai/v1",
+      "model": "qwen/qwen3.8-27b",
+      "extra_headers": {},
+      "accounts": [
+        {
+          "name": "account-1",
+          "api_key": "",
+          "account_id": "",
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "id": "cloudflare",
+      "kind": "openai",
+      "label": "Cloudflare Workers AI",
+      "enabled": true,
+      "base_url": "https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/v1",
+      "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "extra_headers": {},
+      "accounts": [
+        {
+          "name": "account-1",
+          "api_key": "",
+          "account_id": "",
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "id": "ollama",
+      "kind": "openai",
+      "label": "Ollama Local (Offline)",
+      "enabled": true,
+      "base_url": "http://127.0.0.1:11434/v1",
+      "model": "gemma4-fast:latest",
+      "extra_headers": {},
+      "accounts": [
+        {
+          "name": "local-gpu",
+          "api_key": "ollama",
+          "account_id": "",
+          "enabled": true
+        }
+      ]
+    }
+  ]
+}
+
