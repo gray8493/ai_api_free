@@ -1899,7 +1899,10 @@
     (app.cfg.providers || []).forEach(function (p) {
       if (p.enabled) {
         opts.push('<option value="' + esc(p.model) + '">' + esc(p.label || p.id) + ' (' + esc(p.model) + ')</option>');
-        opts.push('<option value="' + esc(p.id) + '/' + esc(p.model) + '">' + esc(p.id) + '/' + esc(p.model) + '</option>');
+        var prefix = p.id + '/';
+        if (p.model.indexOf(prefix) !== 0) {
+          opts.push('<option value="' + esc(prefix + p.model) + '">' + esc(prefix + p.model) + '</option>');
+        }
       }
     });
     sel.innerHTML = opts.join("");
