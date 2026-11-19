@@ -108,9 +108,17 @@ pub async fn models(State(st): State<Arc<AppState>>, headers: HeaderMap) -> Resp
     let mut seen = std::collections::HashSet::new();
     seen.insert("auto".to_string());
     for p in cfg.providers.iter().filter(|p| p.enabled) {
-        for id in [p.model.clone(), format!("{}/{}", p.id, p.model)] {
-            if seen.insert(id.clone()) {
-                data.push(model_entry(id, &p.id));
+        if seen.insert(p.id.clone()) {
+            data.push(model_entry(p.id.clone(), &p.id));
+        }
+        if seen.insert(p.model.clone()) {
+            data.push(model_entry(p.model.clone(), &p.id));
+        }
+        let prefix = format!("{}/", p.id);
+        if !p.model.starts_with(&prefix) {
+            let prefixed = format!("{}{}", prefix, p.model);
+            if seen.insert(prefixed.clone()) {
+                data.push(model_entry(prefixed, &p.id));
             }
         }
     }

@@ -28,12 +28,42 @@ pub struct Success {
 }
 
 fn split_forced(cfg: &Config, requested: &str) -> Option<(usize, String)> {
+    // 1. Khớp trực tiếp với provider id: vd "nvidia", "groq", "gemini"
     for (i, p) in cfg.providers.iter().enumerate() {
-        for sep in ['/', ':'] {
+        if p.enabled && p.id.eq_ignore_ascii_case(requested) {
+            return Some((i, p.model.clone()));
+        }
+    }
+
+    // 2. Khớp chính xác với model mặc định của bất kỳ provider nào:
+    // vd: "nvidia/nemotron-3.5-bolt-e4b" -> giữ nguyên model đầy đủ, để plan() xử lý trực tiếp
+    // (tránh việc strip nhầm prefix 'nvidia/' làm sai tên model của NVIDIA NIM)
+    let is_exact_model = cfg
+        .providers
+        .iter()
+        .any(|p| p.enabled && !requested.is_empty() && requested != "auto" && requested != "*" && p.model == requested);
+    if is_exact_model {
+        return None;
+    }
+
+    // 3. Cú pháp chỉ định provider: <provider>/<model> hoặc <provider>:<model>
+    for (i, p) in cfg.providers.iter().enumerate() {
+        if !p.enabled {
+            continue;
+        }
+        for sep in [':', '/'] {
             let prefix = format!("{}{}", p.id, sep);
             if let Some(rest) = requested.strip_prefix(&prefix) {
                 let rest = rest.trim();
-                return Some((i, if rest.is_empty() { p.model.clone() } else { rest.to_string() }));
+                let model = if rest.is_empty() {
+                    p.model.clone()
+                } else if p.id == "nvidia" && !rest.contains('/') {
+                    // Với NVIDIA NIM, mọi model đều có prefix namespace tổ chức (vd: nvidia/nemotron-3.5-bolt-e4b)
+                    format!("nvidia/{}", rest)
+                } else {
+                    rest.to_string()
+                };
+                return Some((i, model));
             }
         }
     }
