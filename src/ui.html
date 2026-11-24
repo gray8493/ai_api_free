@@ -1315,7 +1315,11 @@
             <h2 class="card-heading">Giám sát Nhà Cung Cấp & Tài Khoản (Telemetry)</h2>
             <div class="card-subtext">Lưu lượng yêu cầu, tỉ lệ thành công và thời gian cooldown thời gian thực.</div>
           </div>
-          <button class="btn sm" id="btn-refresh">Làm mới số liệu</button>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <button class="btn sm" id="btn-benchmark" title="Đo tốc độ phản hồi (ms) của toàn bộ model để sắp xếp ưu tiên">⚡ Đo tốc độ</button>
+            <button class="btn sm" id="btn-unban-all" style="display: none; background: rgba(239,68,68,0.15); color: #ef4444; border-color: rgba(239,68,68,0.3);">Gỡ cấm phiên</button>
+            <button class="btn sm" id="btn-refresh">Làm mới số liệu</button>
+          </div>
         </div>
 
         <div class="table-responsive">
@@ -1364,6 +1368,7 @@
           <label class="field">
             <span>Chiến lược xoay tua (Strategy)</span>
             <select data-path="strategy">
+              <option value="fastest">fastest (Ưu tiên model nhanh nhất)</option>
               <option value="round_robin">round_robin (Chia đều lần lượt)</option>
               <option value="random">random (Ngẫu nhiên)</option>
               <option value="sequential">sequential (Ưu tiên từ trên xuống)</option>
@@ -1376,6 +1381,10 @@
           <label class="field">
             <span>Số lần thử lại tối đa (Attempts)</span>
             <input type="number" class="mono" data-path="max_attempts" min="1" max="32" />
+          </label>
+          <label class="field" style="display: flex; flex-direction: row; align-items: center; gap: 8px; margin-top: 18px;">
+            <input type="checkbox" data-path="session_ban_on_failure" style="width: auto; margin: 0;" />
+            <span>Tự động cấm provider lỗi trong phiên (Session Ban)</span>
           </label>
         </div>
       </div>
@@ -1736,9 +1745,9 @@
   }
 
   function updateStrategyPill() {
-    var s = (app.cfg && app.cfg.strategy) || "round_robin";
-    var names = { round_robin: "chia đều", random: "ngẫu nhiên", sequential: "tuần tự" };
-    $("#pill-strategy").innerHTML = "xoay vòng <b>" + esc(names[s] || s) + "</b>";
+    var s = (app.cfg && app.cfg.strategy) || "sequential";
+    var names = { fastest: "nhanh nhất", round_robin: "chia đều", random: "ngẫu nhiên", sequential: "tuần tự" };
+    $("#pill-strategy").innerHTML = "ưu tiên <b>" + esc(names[s] || s) + "</b>";
   }
 
   async function refreshStatus() {
@@ -1765,8 +1774,13 @@
 
     (st.providers || []).forEach(function (p) {
       var pTotal = 0;
+      var latBadge = p.latency_ms != null
+        ? ' <span style="font-size: 10px; font-family: var(--mono); padding: 1px 5px; border-radius: 4px; white-space: nowrap; background: ' +
+          (p.latency_ms < 1200 ? 'rgba(34,197,94,0.15); color: #4ade80;' : p.latency_ms < 4000 ? 'rgba(234,179,8,0.15); color: #facc15;' : 'rgba(239,68,68,0.15); color: #f87171;') +
+          '" title="Tốc độ phản hồi chuẩn (Benchmark / Test)">⚡ ' + p.latency_ms + 'ms</span>'
+        : '';
       if (!p.accounts.length) {
-        rows.push('<tr><td style="font-weight: 600;">' + esc(p.id) + '</td><td colspan="7" style="color: var(--muted);">chưa có account</td></tr>');
+        rows.push('<tr><td style="font-weight: 600;">' + esc(p.id) + latBadge + '</td><td colspan="7" style="color: var(--muted);">chưa có account</td></tr>');
         return;
       }
       p.accounts.forEach(function (a) {
@@ -1779,9 +1793,10 @@
         totalSuccess += (s.success || 0);
         if (cd > 0) cooldownCount++;
 
+        var banBadge = p.session_banned ? ' <span style="background: rgba(239,68,68,0.2); color: #ef4444; font-size: 10px; padding: 1px 6px; border-radius: 4px; cursor: pointer; white-space: nowrap;" title="Đang bị tạm cấm phiên do lỗi: ' + esc(p.session_ban_reason || "") + '. Nhấp để gỡ cấm" onclick="unbanProvider(\'' + esc(p.id) + '\')">🚫 Cấm phiên</span>' : '';
         rows.push(
           '<tr>' +
-            '<td><strong style="color: var(--ink);">' + esc(p.id) + '</strong> <span style="font-size: 10px; color: var(--muted);">' + (p.enabled ? "" : "(tắt)") + '</span></td>' +
+            '<td><strong style="color: var(--ink);">' + esc(p.id) + '</strong> <span style="font-size: 10px; color: var(--muted);">' + (p.enabled ? "" : "(tắt)") + '</span>' + latBadge + banBadge + '</td>' +
             '<td><span class="dot-indicator ' + dotClass + '" style="display: inline-block; vertical-align: middle; margin-right: 6px;"></span>' + esc(a.name) + '</td>' +
             '<td class="num">' + reqs + '</td>' +
             '<td class="num text-ok">' + (s.success || 0) + '</td>' +
@@ -1796,6 +1811,16 @@
         providerTotals[p.id] = pTotal;
       }
     });
+
+    var btnUnbanAll = $("#btn-unban-all");
+    if (btnUnbanAll) {
+      if ((st.banned_count || 0) > 0) {
+        btnUnbanAll.style.display = "inline-flex";
+        btnUnbanAll.textContent = "Gỡ cấm tất cả (" + st.banned_count + ")";
+      } else {
+        btnUnbanAll.style.display = "none";
+      }
+    }
 
     if ($("#quota-total-requests")) $("#quota-total-requests").textContent = totalReq;
     if ($("#quota-success-rate")) {
@@ -1873,7 +1898,46 @@
     toast("Đã thêm provider, hãy bấm Lưu cấu hình", "ok");
   });
 
+  window.unbanProvider = async function (id) {
+    try {
+      await api("POST", "/api/unban", { provider: id });
+      toast("Đã gỡ cấm provider " + id + " trong phiên!", "ok");
+      refreshStatus();
+    } catch (e) {
+      toast("Lỗi khi gỡ cấm: " + (e.message || e), true);
+    }
+  };
+
+  window.unbanAllProviders = async function () {
+    try {
+      await api("POST", "/api/unban", { provider: "all" });
+      toast("Đã gỡ cấm tất cả provider trong phiên!", "ok");
+      refreshStatus();
+    } catch (e) {
+      toast("Lỗi khi gỡ cấm: " + (e.message || e), true);
+    }
+  };
+
   $("#btn-refresh").addEventListener("click", refreshStatus);
+  var btnUnbanAllEl = $("#btn-unban-all");
+  if (btnUnbanAllEl) btnUnbanAllEl.addEventListener("click", window.unbanAllProviders);
+  var btnBenchEl = $("#btn-benchmark");
+  if (btnBenchEl) {
+    btnBenchEl.addEventListener("click", async function () {
+      btnBenchEl.disabled = true;
+      btnBenchEl.textContent = "Đang đo...";
+      try {
+        await api("POST", "/api/benchmark", {});
+        toast("Đã hoàn tất đo tốc độ các model!", "ok");
+        refreshStatus();
+      } catch (e) {
+        toast("Lỗi đo tốc độ: " + (e.message || e), true);
+      } finally {
+        btnBenchEl.disabled = false;
+        btnBenchEl.textContent = "⚡ Đo tốc độ";
+      }
+    });
+  }
 
   /* TAB NAVIGATION */
   document.querySelectorAll(".nav-tab-btn").forEach(function (btn) {

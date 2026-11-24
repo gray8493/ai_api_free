@@ -7,6 +7,7 @@ use axum::response::{IntoResponse, Response};
 use axum::Json;
 use rand::seq::SliceRandom;
 use serde_json::{json, Value};
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -108,7 +109,28 @@ pub fn plan(state: &AppState, cfg: &Config, requested: &str) -> Vec<Attempt> {
         }
     };
 
+    // Bỏ qua các provider đã bị tạm ngưng trong phiên làm việc nếu không phải request ép buộc (forced)
+    if forced.is_none() && cfg.session_ban_on_failure {
+        let unbanned: Vec<usize> = indices
+            .iter()
+            .copied()
+            .filter(|&i| state.is_provider_banned(&cfg.providers[i].id).is_none())
+            .collect();
+        if !unbanned.is_empty() {
+            indices = unbanned;
+        } else {
+            tracing::warn!("Tất cả provider trong danh sách đều đang bị ban trong phiên làm việc, tạm thời thử lại...");
+        }
+    }
+
     match cfg.strategy.as_str() {
+        "fastest" if forced.is_none() => {
+            indices.sort_by_key(|&i| {
+                state
+                    .provider_latency_ms(&cfg.providers[i].id)
+                    .unwrap_or(u64::MAX)
+            });
+        }
         "random" => indices.shuffle(&mut rand::thread_rng()),
         "round_robin" if forced.is_none() => {
             if indices.len() > 1 {
@@ -349,12 +371,22 @@ pub async fn attempt_once(
 pub async fn execute(st: Arc<AppState>, cfg: Config, body: Value, wants_stream: bool, attempts: Vec<Attempt>) -> Response {
     let mut errors: Vec<Value> = Vec::new();
     let t0 = std::time::Instant::now();
+
+    // Thống kê số account dự kiến thử cho từng provider trong lượt request này
+    let mut provider_total: HashMap<String, usize> = HashMap::new();
+    for a in &attempts {
+        *provider_total.entry(a.provider.id.clone()).or_insert(0) += 1;
+    }
+    let mut provider_failed: HashMap<String, usize> = HashMap::new();
+
     for a in attempts {
         let key = stat_key(&a.provider.id, &a.account.name);
         match attempt_once(&st, &a, &body, wants_stream).await {
             Ok(s) => {
                 let ms = t0.elapsed().as_millis();
                 st.record_success(&key, s.status);
+                // Nếu provider này từng bị tạm ngưng trong phiên thì tự động gỡ ban
+                st.unban_provider(&a.provider.id);
                 println!("<-- [THÀNH CÔNG] Provider: [{}] | Account: [{}] | Model: [{}] ({}ms)", a.provider.id, a.account.name, a.model, ms);
                 tracing::info!(provider = %a.provider.id, account = %a.account.name, model = %a.model, "request ok");
                 return s.response;
@@ -373,6 +405,16 @@ pub async fn execute(st: Arc<AppState>, cfg: Config, body: Value, wants_stream: 
                     "status": f.status,
                     "error": f.message,
                 }));
+
+                let failed_count = provider_failed.entry(a.provider.id.clone()).or_insert(0);
+                *failed_count += 1;
+                let total_accs = provider_total.get(&a.provider.id).copied().unwrap_or(1);
+
+                // Khi TẤT CẢ các account của provider này đều thất bại trong request:
+                // Lập tức tạm ngưng provider trong phiên làm việc hiện tại để các request sau không bị delay!
+                if *failed_count >= total_accs && cfg.session_ban_on_failure {
+                    st.ban_provider(&a.provider.id, &f.message);
+                }
             }
         }
     }
@@ -404,4 +446,82 @@ pub fn test_body() -> Value {
         "temperature": 0,
         "stream": false,
     })
+}
+
+pub async fn benchmark_providers(st: Arc<AppState>) -> Value {
+    let cfg = st.config.read().await.clone();
+    let enabled_providers: Vec<Provider> = cfg
+        .providers
+        .iter()
+        .filter(|p| p.enabled && p.accounts.iter().any(|a| a.enabled && !a.api_key.trim().is_empty()))
+        .cloned()
+        .collect();
+
+    if enabled_providers.is_empty() {
+        return json!({ "ok": true, "results": [] });
+    }
+
+    println!("--> [BENCHMARK] Đang đo tốc độ {} provider khả dụng...", enabled_providers.len());
+
+    let mut set = tokio::task::JoinSet::new();
+    for p in enabled_providers {
+        let st = st.clone();
+        let ban_on_fail = cfg.session_ban_on_failure;
+        let cooldown_secs = cfg.cooldown_secs;
+        set.spawn(async move {
+            let accounts: Vec<Account> = p
+                .accounts
+                .iter()
+                .filter(|a| a.enabled && !a.api_key.trim().is_empty())
+                .cloned()
+                .collect();
+            let mut last_err = String::new();
+            for a in accounts {
+                let key = stat_key(&p.id, &a.name);
+                let attempt = Attempt {
+                    provider: p.clone(),
+                    account: a.clone(),
+                    model: p.model.clone(),
+                };
+                let t0 = std::time::Instant::now();
+                match tokio::time::timeout(Duration::from_secs(20), attempt_once(&st, &attempt, &test_body(), false)).await {
+                    Ok(Ok(_s)) => {
+                        let ms = t0.elapsed().as_millis() as u64;
+                        st.record_latency(&p.id, &a.name, ms);
+                        st.unban_provider(&p.id);
+                        println!("    ⚡ [{}] ({}) -> {}ms", p.id, p.model, ms);
+                        return json!({ "provider": p.id, "model": p.model, "account": a.name, "ok": true, "ms": ms });
+                    }
+                    Ok(Err(f)) => {
+                        if f.cooldown {
+                            st.cooldown(&key, cooldown_secs);
+                        }
+                        last_err = f.message;
+                    }
+                    Err(_) => {
+                        // Quá 20s lúc đo benchmark: coi như model chậm, xếp xuống cuối chứ không ban phiên
+                        let ms = 20_000;
+                        st.record_latency(&p.id, &a.name, ms);
+                        println!("    🐢 [{}] ({}) -> >{}ms (chậm)", p.id, p.model, ms);
+                        return json!({ "provider": p.id, "model": p.model, "account": a.name, "ok": true, "ms": ms, "slow": true });
+                    }
+                }
+            }
+            if ban_on_fail && !last_err.is_empty() {
+                st.ban_provider(&p.id, &last_err);
+            }
+            println!("    ✗ [{}] ({}) -> Lỗi: {}", p.id, p.model, last_err);
+            json!({ "provider": p.id, "model": p.model, "ok": false, "error": last_err })
+        });
+    }
+
+    let mut results = Vec::new();
+    while let Some(res) = set.join_next().await {
+        if let Ok(v) = res {
+            results.push(v);
+        }
+    }
+    results.sort_by_key(|v| v.get("ms").and_then(|x| x.as_u64()).unwrap_or(u64::MAX));
+    println!("<-- [BENCHMARK] Hoàn tất đo tốc độ {} provider.", results.len());
+    json!({ "ok": true, "results": results })
 }
