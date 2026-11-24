@@ -14,6 +14,8 @@ pub struct Config {
     pub cooldown_secs: u64,
     #[serde(default = "default_max_attempts")]
     pub max_attempts: usize,
+    #[serde(default = "default_true")]
+    pub session_ban_on_failure: bool,
     #[serde(default)]
     pub providers: Vec<Provider>,
 }
@@ -49,7 +51,7 @@ fn default_listen() -> String {
     "127.0.0.1:8080".to_string()
 }
 fn default_strategy() -> String {
-    "round_robin".to_string()
+    "sequential".to_string()
 }
 fn default_cooldown() -> u64 {
     60
@@ -61,7 +63,7 @@ fn default_true() -> bool {
     true
 }
 
-pub const STRATEGIES: [&str; 3] = ["round_robin", "random", "sequential"];
+pub const STRATEGIES: [&str; 4] = ["fastest", "round_robin", "random", "sequential"];
 pub const KINDS: [&str; 2] = ["gemini", "openai"];
 
 impl Config {
@@ -72,6 +74,7 @@ impl Config {
             strategy: default_strategy(),
             cooldown_secs: default_cooldown(),
             max_attempts: default_max_attempts(),
+            session_ban_on_failure: default_true(),
             providers: vec![
                 Provider {
                     id: "gemini".into(),
@@ -80,26 +83,6 @@ impl Config {
                     enabled: true,
                     base_url: "https://generativelanguage.googleapis.com/v1beta".into(),
                     model: "gemini-3.1-flash-lite".into(),
-                    extra_headers: BTreeMap::new(),
-                    accounts: Vec::new(),
-                },
-                Provider {
-                    id: "openrouter".into(),
-                    kind: "openai".into(),
-                    label: "OpenRouter".into(),
-                    enabled: true,
-                    base_url: "https://openrouter.ai/api/v1".into(),
-                    model: "openrouter/free".into(),
-                    extra_headers: BTreeMap::new(),
-                    accounts: Vec::new(),
-                },
-                Provider {
-                    id: "nvidia".into(),
-                    kind: "openai".into(),
-                    label: "NVIDIA NIM".into(),
-                    enabled: true,
-                    base_url: "https://integrate.api.nvidia.com/v1".into(),
-                    model: "google/gemma-4-31b-it".into(),
                     extra_headers: BTreeMap::new(),
                     accounts: Vec::new(),
                 },
@@ -120,6 +103,26 @@ impl Config {
                     enabled: true,
                     base_url: "https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/v1".into(),
                     model: "@cf/meta/llama-3.3-70b-instruct-fp8-fast".into(),
+                    extra_headers: BTreeMap::new(),
+                    accounts: Vec::new(),
+                },
+                Provider {
+                    id: "nvidia".into(),
+                    kind: "openai".into(),
+                    label: "NVIDIA NIM".into(),
+                    enabled: true,
+                    base_url: "https://integrate.api.nvidia.com/v1".into(),
+                    model: "nvidia/nemotron-3.5-bolt-e4b".into(),
+                    extra_headers: BTreeMap::new(),
+                    accounts: Vec::new(),
+                },
+                Provider {
+                    id: "openrouter".into(),
+                    kind: "openai".into(),
+                    label: "OpenRouter".into(),
+                    enabled: true,
+                    base_url: "https://openrouter.ai/api/v1".into(),
+                    model: "openrouter/free".into(),
                     extra_headers: BTreeMap::new(),
                     accounts: Vec::new(),
                 },

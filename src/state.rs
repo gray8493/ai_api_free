@@ -26,6 +26,13 @@ pub struct AccountStat {
     pub last_used: Option<u64>,
     pub last_status: Option<u16>,
     pub last_error: Option<String>,
+    pub latency_ms: Option<u64>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct SessionBanInfo {
+    pub reason: String,
+    pub banned_at: u64,
 }
 
 pub struct AppState {
@@ -34,6 +41,8 @@ pub struct AppState {
     pub client: reqwest::Client,
     pub stats: Mutex<HashMap<String, AccountStat>>,
     pub cooldowns: Mutex<HashMap<String, Instant>>,
+    pub session_banned_providers: Mutex<HashMap<String, SessionBanInfo>>,
+    pub provider_latencies: Mutex<HashMap<String, u64>>,
     pub cursors: Mutex<HashMap<String, usize>>,
     pub global_cursor: AtomicUsize,
     pub started: Instant,
@@ -53,6 +62,8 @@ impl AppState {
             client,
             stats: Mutex::new(HashMap::new()),
             cooldowns: Mutex::new(HashMap::new()),
+            session_banned_providers: Mutex::new(HashMap::new()),
+            provider_latencies: Mutex::new(HashMap::new()),
             cursors: Mutex::new(HashMap::new()),
             global_cursor: AtomicUsize::new(0),
             started: Instant::now(),
@@ -101,6 +112,65 @@ impl AppState {
         }
     }
 
+    pub fn ban_provider(&self, provider_id: &str, reason: &str) {
+        let mut map = self.session_banned_providers.lock().unwrap();
+        if !map.contains_key(provider_id) {
+            println!(
+                "<-- [BAN PHIÊN] Provider [{}] đã bị tạm ngưng trong phiên làm việc do: {}. Sẽ tự động chuyển qua provider khác!",
+                provider_id, reason
+            );
+        }
+        map.insert(
+            provider_id.to_string(),
+            SessionBanInfo {
+                reason: reason.chars().take(300).collect(),
+                banned_at: now_ms(),
+            },
+        );
+    }
+
+    pub fn is_provider_banned(&self, provider_id: &str) -> Option<SessionBanInfo> {
+        self.session_banned_providers.lock().unwrap().get(provider_id).cloned()
+    }
+
+    pub fn unban_provider(&self, provider_id: &str) -> bool {
+        let mut map = self.session_banned_providers.lock().unwrap();
+        if map.remove(provider_id).is_some() {
+            println!(
+                "<-- [MỞ KHÓA PHIÊN] Provider [{}] đã được gỡ ban trong phiên làm việc!",
+                provider_id
+            );
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn unban_all_providers(&self) {
+        let mut map = self.session_banned_providers.lock().unwrap();
+        if !map.is_empty() {
+            map.clear();
+            println!("<-- [MỞ KHÓA PHIÊN] Đã gỡ ban tất cả các provider trong phiên!");
+        }
+    }
+
+    pub fn record_latency(&self, provider_id: &str, account_name: &str, ms: u64) {
+        let key = stat_key(provider_id, account_name);
+        {
+            let mut stats = self.stats.lock().unwrap();
+            let e = stats.entry(key).or_default();
+            e.latency_ms = Some(ms);
+        }
+        self.provider_latencies
+            .lock()
+            .unwrap()
+            .insert(provider_id.to_string(), ms);
+    }
+
+    pub fn provider_latency_ms(&self, provider_id: &str) -> Option<u64> {
+        self.provider_latencies.lock().unwrap().get(provider_id).copied()
+    }
+
     pub fn next_cursor(&self, key: &str, len: usize) -> usize {
         if len == 0 {
             return 0;
@@ -121,10 +191,14 @@ impl AppState {
 
     pub fn status_json(&self, cfg: &Config) -> serde_json::Value {
         let stats = self.stats.lock().unwrap();
+        let banned = self.session_banned_providers.lock().unwrap();
+        let latencies = self.provider_latencies.lock().unwrap();
         let providers: Vec<serde_json::Value> = cfg
             .providers
             .iter()
             .map(|p| {
+                let ban_info = banned.get(&p.id).cloned();
+                let latency_ms = latencies.get(&p.id).copied();
                 let accounts: Vec<serde_json::Value> = p
                     .accounts
                     .iter()
@@ -145,6 +219,9 @@ impl AppState {
                     "enabled": p.enabled,
                     "model": p.model,
                     "active_accounts": p.accounts.iter().filter(|a| a.enabled && !a.api_key.trim().is_empty()).count(),
+                    "latency_ms": latency_ms,
+                    "session_banned": ban_info.is_some(),
+                    "session_ban_reason": ban_info.map(|b| b.reason),
                     "accounts": accounts,
                 })
             })
@@ -154,6 +231,8 @@ impl AppState {
             "uptime_secs": self.started.elapsed().as_secs(),
             "strategy": cfg.strategy,
             "cooldown_secs": cfg.cooldown_secs,
+            "session_ban_on_failure": cfg.session_ban_on_failure,
+            "banned_count": banned.len(),
             "providers": providers,
         })
     }
@@ -164,7 +243,12 @@ impl AppState {
             .iter()
             .flat_map(|p| p.accounts.iter().map(move |a| stat_key(&p.id, &a.name)))
             .collect();
+        let valid_providers: HashSet<String> = cfg.providers.iter().map(|p| p.id.clone()).collect();
         self.stats.lock().unwrap().retain(|k, _| valid.contains(k));
         self.cooldowns.lock().unwrap().retain(|k, _| valid.contains(k));
+        self.provider_latencies
+            .lock()
+            .unwrap()
+            .retain(|k, _| valid_providers.contains(k));
     }
 }

@@ -108,9 +108,17 @@ pub async fn models(State(st): State<Arc<AppState>>, headers: HeaderMap) -> Resp
     let mut seen = std::collections::HashSet::new();
     seen.insert("auto".to_string());
     for p in cfg.providers.iter().filter(|p| p.enabled) {
-        for id in [p.model.clone(), format!("{}/{}", p.id, p.model)] {
-            if seen.insert(id.clone()) {
-                data.push(model_entry(id, &p.id));
+        if seen.insert(p.id.clone()) {
+            data.push(model_entry(p.id.clone(), &p.id));
+        }
+        if seen.insert(p.model.clone()) {
+            data.push(model_entry(p.model.clone(), &p.id));
+        }
+        let prefix = format!("{}/", p.id);
+        if !p.model.starts_with(&prefix) {
+            let prefixed = format!("{}{}", prefix, p.model);
+            if seen.insert(prefixed.clone()) {
+                data.push(model_entry(prefixed, &p.id));
             }
         }
     }
@@ -218,6 +226,8 @@ pub async fn test_account(State(st): State<Arc<AppState>>, headers: HeaderMap, J
                 let bytes = to_bytes(s.response.into_body(), 1024 * 512).await.unwrap_or_default();
                 let v: Value = serde_json::from_slice(&bytes).unwrap_or(Value::Null);
                 st.record_success(&key, s.status);
+                st.record_latency(&p.id, &a.name, ms as u64);
+                st.unban_provider(&p.id);
                 results.push(json!({ "account": a.name, "ok": true, "ms": ms, "reply": reply_preview(&v) }));
             }
             Err(f) => {
@@ -234,4 +244,26 @@ pub async fn test_account(State(st): State<Arc<AppState>>, headers: HeaderMap, J
         }
     }
     Json(json!({ "provider": p.id, "model": p.model, "results": results })).into_response()
+}
+
+pub async fn benchmark(State(st): State<Arc<AppState>>, headers: HeaderMap) -> Response {
+    if !authorized(&st, &headers).await {
+        return unauthorized();
+    }
+    let summary = proxy::benchmark_providers(st).await;
+    Json(summary).into_response()
+}
+
+pub async fn unban(State(st): State<Arc<AppState>>, headers: HeaderMap, Json(body): Json<Value>) -> Response {
+    if !authorized(&st, &headers).await {
+        return unauthorized();
+    }
+    let provider_id = body.get("provider").and_then(|v| v.as_str()).unwrap_or("");
+    if provider_id == "all" || provider_id.is_empty() {
+        st.unban_all_providers();
+        Json(json!({ "ok": true, "message": "Đã gỡ ban tất cả provider trong phiên" })).into_response()
+    } else {
+        let unbanned = st.unban_provider(provider_id);
+        Json(json!({ "ok": true, "provider": provider_id, "unbanned": unbanned })).into_response()
+    }
 }

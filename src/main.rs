@@ -40,8 +40,14 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/config/reload", post(api::reload))
         .route("/api/status", get(api::status))
         .route("/api/test", post(api::test_account))
+        .route("/api/unban", post(api::unban))
+        .route("/api/benchmark", post(api::benchmark))
         .layer(CorsLayer::permissive())
-        .with_state(state);
+        .with_state(state.clone());
+
+    tokio::spawn(async move {
+        proxy::benchmark_providers(state).await;
+    });
 
     let addr: SocketAddr = listen
         .parse()
